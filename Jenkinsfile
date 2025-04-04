@@ -31,36 +31,13 @@ pipeline {
                 withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
                     // Login to Azure
                     bat 'az login --service-principal -u "%AZURE_CLIENT_ID%" -p "%AZURE_CLIENT_SECRET%" --tenant "%AZURE_TENANT_ID%"'
-                    
-                    // Create resource group and verify
-                    bat '''
-                        az group create --name %RESOURCE_GROUP% --location eastus
-                        az group show --name %RESOURCE_GROUP%
-                    '''
-                    
-                    // Create app service plan
-                    bat '''
-                        az appservice plan create --name %APP_SERVICE_NAME%-plan --resource-group %RESOURCE_GROUP% --sku B1 --is-linux
-                        az appservice plan show --name %APP_SERVICE_NAME%-plan --resource-group %RESOURCE_GROUP%
-                    '''
-                    
-                    // Create web app with correct runtime format
-                    bat '''
-                        az webapp create --resource-group %RESOURCE_GROUP% --plan %APP_SERVICE_NAME%-plan --name %APP_SERVICE_NAME% --runtime "PYTHON|%PYTHON_VERSION%"
-                    '''
-                    
-                    // Configure web app
+                    bat 'az group create --name %RESOURCE_GROUP% --location eastus'
+                    bat 'az appservice plan create --name %APP_SERVICE_NAME%-plan --resource-group %RESOURCE_GROUP% --sku B1 --is-linux'
+                    bat 'az webapp create --resource-group %RESOURCE_GROUP% --plan %APP_SERVICE_NAME%-plan --name %APP_SERVICE_NAME% --runtime "PYTHON|%PYTHON_VERSION%"'
+         
                     bat 'az webapp config set --resource-group %RESOURCE_GROUP% --name %APP_SERVICE_NAME% --startup-file "gunicorn --bind=0.0.0.0 --timeout 600 app:app"'
-                    
-                    // Create deployment package
-                    bat '''
-                        mkdir deploy
-                        copy app.py deploy\\
-                        copy requirements.txt deploy\\
-                        powershell Compress-Archive -Path "deploy\\*" -DestinationPath "./deploy.zip" -Force
-                    '''
-                    
-                    // Deploy the application
+                    bat  'powershell Compress-Archive -Path ./* -DestinationPath ./deploy.zip" -Force'
+  
                     bat 'az webapp deploy --resource-group %RESOURCE_GROUP% --name %APP_SERVICE_NAME% --src-path ./deploy.zip --timeout 1800'
                 }
             }
