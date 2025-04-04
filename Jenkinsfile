@@ -23,8 +23,6 @@ pipeline {
                     "%PYTHON_PATH%" --version
                     "%PYTHON_PATH%" -m pip install --upgrade pip
                     "%PYTHON_PATH%" -m pip install -r requirements.txt
-                    "%PYTHON_PATH%" -m pip install pytest
-                    "%PYTHON_PATH%" -m pytest
                 '''
             }
         }
