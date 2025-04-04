@@ -5,7 +5,7 @@ pipeline {
         AZURE_CREDENTIALS_ID = 'azure-service-principal'
         RESOURCE_GROUP = 'python-webapp-rg'
         APP_SERVICE_NAME = 'python-webapp-service-04082003'
-        PYTHON_VERSION = '3.10'
+        PYTHON_VERSION = '3.10.0'
         PYTHON_PATH = 'C:\\Users\\window 10\\AppData\\Local\\Programs\\Python\\Python310\\python.exe' 
     }
     
@@ -18,7 +18,6 @@ pipeline {
         
         stage('Build') {
             steps {
-                // Using full path to Python executable
                 bat '''
                     "%PYTHON_PATH%" --version
                     "%PYTHON_PATH%" -m pip install --upgrade pip
@@ -30,26 +29,20 @@ pipeline {
         stage('Deploy') {
             steps {
                 withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
-                    // Check network connectivity first
-                    bat '''
-                        ping login.microsoftonline.com
-                        ping management.azure.com
-                    '''
-                    
                     // Login with retry
                     bat '''
                         for /L %%i in (1,1,3) do (
-                            az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID && goto :success
+                            az login --service-principal -u "%AZURE_CLIENT_ID%" -p "%AZURE_CLIENT_SECRET%" --tenant "%AZURE_TENANT_ID%" && goto :success
                             timeout /t 10
                         )
                         :success
                     '''
                     
                     // Create resources
-                    bat "az group create --name $RESOURCE_GROUP --location eastus"
-                    bat "az appservice plan create --name ${APP_SERVICE_NAME}-plan --resource-group $RESOURCE_GROUP --sku B1 --is-linux"
-                    bat "az webapp create --resource-group $RESOURCE_GROUP --plan ${APP_SERVICE_NAME}-plan --name $APP_SERVICE_NAME --runtime \"PYTHON:${PYTHON_VERSION}\""
-                    bat "az webapp config set --resource-group $RESOURCE_GROUP --name $APP_SERVICE_NAME --startup-file \"gunicorn --bind=0.0.0.0 --timeout 600 app:app\""
+                    bat "az group create --name %RESOURCE_GROUP% --location eastus"
+                    bat "az appservice plan create --name %APP_SERVICE_NAME%-plan --resource-group %RESOURCE_GROUP% --sku B1 --is-linux"
+                    bat "az webapp create --resource-group %RESOURCE_GROUP% --plan %APP_SERVICE_NAME%-plan --name %APP_SERVICE_NAME% --runtime \"PYTHON:%PYTHON_VERSION%\""
+                    bat "az webapp config set --resource-group %RESOURCE_GROUP% --name %APP_SERVICE_NAME% --startup-file \"gunicorn --bind=0.0.0.0 --timeout 600 app:app\""
                     
                     // Create deployment package
                     bat '''
@@ -60,7 +53,7 @@ pipeline {
                     '''
                     
                     // Deploy using zip deployment
-                    bat "az webapp deploy --resource-group $RESOURCE_GROUP --name $APP_SERVICE_NAME --src-path ./deploy.zip --timeout 1800"
+                    bat "az webapp deploy --resource-group %RESOURCE_GROUP% --name %APP_SERVICE_NAME% --src-path ./deploy.zip --timeout 1800"
                 }
             }
         }
