@@ -3,9 +3,9 @@ pipeline {
     
     environment {
         AZURE_CREDENTIALS_ID = 'azure-service-principal'
-        RESOURCE_GROUP = 'python-webapp-rg'
-        APP_SERVICE_NAME = 'python-webapp-service-04082003'
-        PYTHON_VERSION = '3.10'
+        RESOURCE_GROUP = 'python-webapp-rg-01'
+        APP_SERVICE_NAME = 'python-webapp-service-14082003'
+        PYTHON_VERSION = '3.10.0'
         PYTHON_PATH = 'C:\\Users\\window 10\\AppData\\Local\\Programs\\Python\\Python310\\python.exe'
     }
     
