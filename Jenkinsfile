@@ -5,22 +5,27 @@ pipeline {
         AZURE_CREDENTIALS_ID = 'azure-service-principal'
         RESOURCE_GROUP = 'python-webapp-rg'
         APP_SERVICE_NAME = 'python-webapp-service'
-        PYTHON_VERSION = '3.11'
+        PYTHON_VERSION = '3.10'
+        PYTHON_PATH = 'C:\\Users\\window 10\\AppData\\Local\\Programs\\Python\\Python310\\python.exe' 
     }
     
     stages {
         stage('Checkout Code') {
             steps {
-                 git branch: 'master', url: 'https://github.com/aditya-blanko/WebApiJenkins.git'
+                git branch: 'main', url: 'https://github.com/y/python-webapp.git'
             }
         }
         
         stage('Build') {
             steps {
-                bat 'python -m pip install --upgrade pip'
-                bat 'pip install -r requirements.txt'
-                bat 'pip install pytest'
-                bat 'python -m pytest'
+                // Using full path to Python executable
+                bat '''
+                    "%PYTHON_PATH%" --version
+                    "%PYTHON_PATH%" -m pip install --upgrade pip
+                    "%PYTHON_PATH%" -m pip install -r requirements.txt
+                    "%PYTHON_PATH%" -m pip install pytest
+                    "%PYTHON_PATH%" -m pytest
+                '''
             }
         }
         
