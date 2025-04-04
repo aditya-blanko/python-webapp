@@ -39,9 +39,9 @@ pipeline {
                     // Create deployment package with only necessary files
                     bat '''
                         mkdir deploy
-                        copy app.py deploy\
-                        copy requirements.txt deploy\
-                        powershell Compress-Archive -Path deploy\* -DestinationPath ./deploy.zip -Force
+                        copy app.py deploy\\
+                        copy requirements.txt deploy\\
+                        powershell Compress-Archive -Path "deploy\\*" -DestinationPath "./deploy.zip" -Force
                     '''
                     
                     // Deploy using the newer command with timeout
