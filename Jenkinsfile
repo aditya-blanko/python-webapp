@@ -36,11 +36,16 @@ pipeline {
                     bat "az webapp create --resource-group $RESOURCE_GROUP --plan ${APP_SERVICE_NAME}-plan --name $APP_SERVICE_NAME --runtime \"PYTHON:${PYTHON_VERSION}\""
                     bat "az webapp config set --resource-group $RESOURCE_GROUP --name $APP_SERVICE_NAME --startup-file \"gunicorn --bind=0.0.0.0 --timeout 600 app:app\""
                     
-                    // Create deployment package
-                    bat "powershell Compress-Archive -Path ./* -DestinationPath ./deploy.zip -Force"
+                    // Create deployment package with only necessary files
+                    bat '''
+                        mkdir deploy
+                        copy app.py deploy\
+                        copy requirements.txt deploy\
+                        powershell Compress-Archive -Path deploy\* -DestinationPath ./deploy.zip -Force
+                    '''
                     
-                    // Deploy the package
-                    bat "az webapp deployment source config-zip --resource-group $RESOURCE_GROUP --name $APP_SERVICE_NAME --src ./deploy.zip"
+                    // Deploy using the newer command with timeout
+                    bat "az webapp deploy --resource-group $RESOURCE_GROUP --name $APP_SERVICE_NAME --src-path ./deploy.zip --timeout 1800"
                 }
             }
         }
