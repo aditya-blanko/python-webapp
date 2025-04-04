@@ -33,7 +33,7 @@ pipeline {
                     bat 'az login --service-principal -u "%AZURE_CLIENT_ID%" -p "%AZURE_CLIENT_SECRET%" --tenant "%AZURE_TENANT_ID%"'
                     
                     // Create resource group
-                    bat 'az group create --name %RESOURCE_GROUP% --location eastus'
+                    bat 'az group create --name %RESOURCE_GROUP% --location centralus'
                     
                     // Create app service plan
                     bat 'az appservice plan create --name %APP_SERVICE_NAME%-plan --resource-group %RESOURCE_GROUP% --sku B1 --is-linux'
