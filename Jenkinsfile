@@ -2,52 +2,56 @@ pipeline {
     agent any
     
     environment {
-        AZURE_CREDENTIALS = credentials('azure-service-principal')
+        AZURE_CREDENTIALS_ID = 'azure-service-principal'
+        RESOURCE_GROUP = 'python-webapp-rg'
+        APP_SERVICE_NAME = 'python-webapp-service'
         PYTHON_VERSION = '3.11'
     }
     
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                git 'https://github.com/your-repo/python-webapp.git'
+                 git branch: 'master', url: 'https://github.com/aditya-blanko/WebApiJenkins.git'
             }
         }
         
-        stage('Setup Python') {
+        stage('Build') {
             steps {
-                script {
-                    bat 'python -m pip install --upgrade pip'
-                    bat 'pip install -r requirements.txt'
-                }
+                bat 'python -m pip install --upgrade pip'
+                bat 'pip install -r requirements.txt'
+                bat 'pip install pytest'
+                bat 'python -m pytest'
             }
         }
         
-        stage('Test') {
+        stage('Deploy') {
             steps {
-                script {
-                    bat 'python -m pytest'
-                }
-            }
-        }
-        
-        stage('Deploy to Azure') {
-            steps {
-                withCredentials([azureServicePrincipal('azure-service-principal')]) {
-                    bat '''
-                        az login --service-principal -u $AZURE_CREDENTIALS_USR -p $AZURE_CREDENTIALS_PSW --tenant $AZURE_CREDENTIALS_TEN
-                        az group create --name python-webapp-rg --location eastus
-                        az appservice plan create --name python-webapp-plan --resource-group python-webapp-rg --sku B1 --is-linux
-                        az webapp create --resource-group python-webapp-rg --plan python-webapp-plan --name python-webapp-service --runtime "PYTHON:3.11"
-                        az webapp config set --resource-group python-webapp-rg --name python-webapp-service --startup-file "gunicorn --bind=0.0.0.0 --timeout 600 app:app"
-                    '''
+                withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
+                    bat "az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID"
+                    bat "az group create --name $RESOURCE_GROUP --location eastus"
+                    bat "az appservice plan create --name ${APP_SERVICE_NAME}-plan --resource-group $RESOURCE_GROUP --sku B1 --is-linux"
+                    bat "az webapp create --resource-group $RESOURCE_GROUP --plan ${APP_SERVICE_NAME}-plan --name $APP_SERVICE_NAME --runtime \"PYTHON:${PYTHON_VERSION}\""
+                    bat "az webapp config set --resource-group $RESOURCE_GROUP --name $APP_SERVICE_NAME --startup-file \"gunicorn --bind=0.0.0.0 --timeout 600 app:app\""
+                    
+                    // Create deployment package
+                    bat "powershell Compress-Archive -Path ./* -DestinationPath ./deploy.zip -Force"
+                    
+                    // Deploy the package
+                    bat "az webapp deployment source config-zip --resource-group $RESOURCE_GROUP --name $APP_SERVICE_NAME --src ./deploy.zip"
                 }
             }
         }
     }
     
     post {
+        success {
+            echo 'Deployment Successful!'
+        }
+        failure {
+            echo 'Deployment Failed!'
+        }
         always {
             cleanWs()
         }
     }
-} 
+}
