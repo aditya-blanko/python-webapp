@@ -29,20 +29,18 @@ pipeline {
         stage('Deploy') {
             steps {
                 withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
-                    // Login with retry
+                    // Login to Azure
                     bat '''
-                        for /L %%i in (1,1,3) do (
-                            az login --service-principal -u "%AZURE_CLIENT_ID%" -p "%AZURE_CLIENT_SECRET%" --tenant "%AZURE_TENANT_ID%" && goto :success
-                            timeout /t 10
-                        )
-                        :success
+                        az login --service-principal -u "%AZURE_CLIENT_ID%" -p "%AZURE_CLIENT_SECRET%" --tenant "%AZURE_TENANT_ID%"
                     '''
                     
                     // Create resources
-                    bat "az group create --name %RESOURCE_GROUP% --location eastus"
-                    bat "az appservice plan create --name %APP_SERVICE_NAME%-plan --resource-group %RESOURCE_GROUP% --sku B1 --is-linux"
-                    bat "az webapp create --resource-group %RESOURCE_GROUP% --plan %APP_SERVICE_NAME%-plan --name %APP_SERVICE_NAME% --runtime \"PYTHON:%PYTHON_VERSION%\""
-                    bat "az webapp config set --resource-group %RESOURCE_GROUP% --name %APP_SERVICE_NAME% --startup-file \"gunicorn --bind=0.0.0.0 --timeout 600 app:app\""
+                    bat '''
+                        az group create --name %RESOURCE_GROUP% --location eastus
+                        az appservice plan create --name %APP_SERVICE_NAME%-plan --resource-group %RESOURCE_GROUP% --sku B1 --is-linux
+                        az webapp create --resource-group %RESOURCE_GROUP% --plan %APP_SERVICE_NAME%-plan --name %APP_SERVICE_NAME% --runtime "PYTHON:%PYTHON_VERSION%"
+                        az webapp config set --resource-group %RESOURCE_GROUP% --name %APP_SERVICE_NAME% --startup-file "gunicorn --bind=0.0.0.0 --timeout 600 app:app"
+                    '''
                     
                     // Create deployment package
                     bat '''
@@ -53,7 +51,9 @@ pipeline {
                     '''
                     
                     // Deploy using zip deployment
-                    bat "az webapp deploy --resource-group %RESOURCE_GROUP% --name %APP_SERVICE_NAME% --src-path ./deploy.zip --timeout 1800"
+                    bat '''
+                        az webapp deploy --resource-group %RESOURCE_GROUP% --name %APP_SERVICE_NAME% --src-path ./deploy.zip --timeout 1800
+                    '''
                 }
             }
         }
