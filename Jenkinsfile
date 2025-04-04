@@ -5,7 +5,7 @@ pipeline {
         AZURE_CREDENTIALS_ID = 'azure-service-principal'
         RESOURCE_GROUP = 'python-webapp-rg'
         APP_SERVICE_NAME = 'python-webapp-service-04082003'
-        PYTHON_VERSION = '3.10'
+        PYTHON_VERSION = '3.10.0'
         PYTHON_PATH = 'C:\\Users\\window 10\\AppData\\Local\\Programs\\Python\\Python310\\python.exe' 
     }
     
@@ -36,16 +36,11 @@ pipeline {
                     bat "az webapp create --resource-group $RESOURCE_GROUP --plan ${APP_SERVICE_NAME}-plan --name $APP_SERVICE_NAME --runtime \"PYTHON:${PYTHON_VERSION}\""
                     bat "az webapp config set --resource-group $RESOURCE_GROUP --name $APP_SERVICE_NAME --startup-file \"gunicorn --bind=0.0.0.0 --timeout 600 app:app\""
                     
-                    // Create deployment package with only necessary files
-                    bat '''
-                        mkdir deploy
-                        copy app.py deploy\\
-                        copy requirements.txt deploy\\
-                        powershell Compress-Archive -Path "deploy\\*" -DestinationPath "./deploy.zip" -Force
-                    '''
+                    // Deploy directly from GitHub
+                    bat "az webapp deployment source config --resource-group $RESOURCE_GROUP --name $APP_SERVICE_NAME --repo-url https://github.com/aditya-blanko/python-webapp.git --branch main --manual-integration"
                     
-                    // Deploy using the newer command with timeout
-                    bat "az webapp deploy --resource-group $RESOURCE_GROUP --name $APP_SERVICE_NAME --src-path ./deploy.zip --timeout 1800"
+                    // Trigger deployment
+                    bat "az webapp deployment source sync --resource-group $RESOURCE_GROUP --name $APP_SERVICE_NAME"
                 }
             }
         }
